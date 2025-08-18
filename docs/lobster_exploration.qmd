@@ -1,0 +1,27 @@
+---
+title: "Lobster Exploration"
+format: html
+editor: visual
+---
+
+## Data tidying and subsetting
+```{r}
+# load packages
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+```{r}
+# read in data
+lobsters <- read_csv(here::here("data","Lobster_Abundance_All_Years_20210412.csv"), na = c("-99999", "")) %>% 
+  janitor::clean_names() %>% 
+  # duplicated rows based on count value
+  uncount(count)
+```
+
+```{r}
+# find counts and mean sizes by site & year
+summary_table <- group_by()+
+```
+
