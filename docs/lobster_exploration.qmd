@@ -16,12 +16,97 @@ library(janitor)
 # read in data
 lobsters <- read_csv(here::here("data","Lobster_Abundance_All_Years_20210412.csv"), na = c("-99999", "")) %>% 
   janitor::clean_names() %>% 
-  # duplicated rows based on count value
+  # duplicated rows based on count value & removed count column
   uncount(count)
 ```
 
 ```{r}
 # find counts and mean sizes by site & year
-summary_table <- group_by()+
+summary_table <- lobsters %>% 
+  group_by(site, year) %>% 
+  summarize(total_counts = n(), 
+mean_carapace = mean(size_mm, na.rm = TRUE))
+
+# plot this data
+annual_lobsters_plot <- ggplot(summary_table, aes(x = year, y = total_counts)) +
+  geom_line(aes(color = summary_table$site)) +
+  facet_wrap(~ site) +
+  theme_minimal() +
+  labs(title = "Lobsters observed annually by site",
+       subtitle = "California spiny lobster (Panulirus interruptus)",
+       xlab = "year",
+       ylab = "lobsters observed")
+
+annual_lobsters_plot
+```
+
+```{r}
+# find proportion of legal lobsters at each site for 2020
+
+# create subset with only 2020 lobster data
+lobsters_2020 <- lobsters %>% 
+  dplyr::filter(year == 2020)  %>% 
+  dplyr::mutate(legal = case_when(
+    size_mm < 79.76 ~ "illegal",
+    size_mm > 79.76 ~ "legal")) 
+
+lobsters_n_legal <- lobsters_2020 %>% 
+  count(site, legal) %>% 
+  drop_na(legal)
+
+# create stacked column graph
+prop_legal_graph <- ggplot(lobsters_n_legal, aes(x = site, y = n)) +
+  geom_col(aes(fill = legal), position = "fill")
+# position = "fill" converts from absolute counts to proportions
+
+prop_legal_graph
+```
+
+## Lobster wrangling practice
+```{r}
+# filter()
+subset1 <- lobsters %>% 
+  filter(site == "IVEE" | site == "CARP" | site == "NAPL")
+# or.. site %in% c("IVEE", "CARP", "NAPL")
+
+subset2 <- lobsters %>% 
+  filter(month == 8)
+
+subset3 <- lobsters %>% 
+  filter(site == "AQUE" | size_mm > 70)
+
+subset4 <- lobsters %>% 
+  filter(!site == "NAPL")
+```
+
+```{r}
+# group_by() %>% summarize()
+ex_1 <- lobsters %>% 
+  group_by(site) %>% 
+  summarize(mean_lcl = mean(size_mm, na.rm = TRUE), 
+            sd_lcl = sd(size_mm, na.rm = TRUE))
+
+ex_2 <- lobsters %>% 
+  group_by(site, month) %>% 
+  summarize(max_lcl = max(size_mm, na.rm = TRUE))
+```
+
+```{r}
+# mutate()
+ex_3 <- lobsters %>% 
+  mutate(size_cm = size_mm / 10,
+         site = tolower(site), # change to lowercase
+         area = as.character(area)) # change to character 
+```
+
+```{r}
+# case_when()
+ex_4 <- lobsters %>% 
+  mutate(size_bin = case_when(size_mm <= 70 ~ "small",
+                              size_mm > 70 ~ "large"))
+
+ex_5 <- lobsters %>% 
+  mutate(designation = case_when(site %in% c("IVEE", "NAPL") ~ "MPA",
+                                 TRUE ~ "not MPA")) # catch-all, will assign to anything that wasn't assigned earlier  
 ```
 
